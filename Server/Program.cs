@@ -91,9 +91,9 @@ namespace WebSocketSample.Server
         // キュー内のタスク実行
         void UpdateActions()
         {
-            while (true)
+            lock (actions)
             {
-                lock (actions)
+                while (true)
                 {
                     if (actions.Count == 0) break;
 

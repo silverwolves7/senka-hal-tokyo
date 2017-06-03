@@ -169,11 +169,7 @@ namespace WebSocketSample.Server
             Player player;
             if (players.TryGetValue(playerUpdate.Payload.Id, out player))
             {
-                player.SetPosition(
-                    playerUpdate.Payload.Position.X,
-                    playerUpdate.Payload.Position.Y,
-                    playerUpdate.Payload.Position.Z
-                );
+                player.SetPosition(playerUpdate.Payload.Position);
             }
         }
 
@@ -285,15 +281,14 @@ namespace WebSocketSample.Server
             PositionChanged = false;
         }
 
-        public void SetPosition(float x, float y, float z)
+        public void SetPosition(Position position)
         {
-            if (this.x != x || this.y != y || this.z != z)
-            {
-                this.x = x;
-                this.y = y;
-                this.z = z;
-                PositionChanged = true;
-            }
+            if (x == position.X && y == position.Y && z == position.Z) return;
+
+            x = position.X;
+            y = position.Y;
+            z = position.Z;
+            PositionChanged = true;
         }
 
         public override string ToString()

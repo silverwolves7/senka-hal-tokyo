@@ -22,50 +22,35 @@ namespace WebSocketSample.Server
 
     public class GameServer
     {
-        const int FPS = 30;
-
-        const float FRAME_SEC = 1 / FPS;
-
+        const string DEFAULT_ADDRESS = "ws//localhost:5678";
         const string EXIT_KEY = "q";
 
-        const string DEFAULT_ADDRESS = "ws//localhost:5678";
+        static GameServer instance;
 
-        string address;
+        public WebSocketServer WebSocketServer;
 
         Dictionary<int, Player> players = new Dictionary<int, Player>();
-
-        WebSocketServer ws;
-
-        UIDGenerator uidGenerator = new UIDGenerator();
-
-        static GameServer sv;
-
         Queue<Action> actions = new Queue<Action>(); // 非同期タスク
-
-        private GameServer(string address)
-        {
-            this.address = address;
-            ws = new WebSocketServer(address);
-            ws.AddWebSocketService<WebSocketSampleService>("/");
-        }
+        UIDGenerator uidGenerator = new UIDGenerator();
 
         static public GameServer GetInstance(string address = DEFAULT_ADDRESS)
         {
-            if (sv == null)
+            if (instance == null)
             {
-                sv = new GameServer(address);
+                instance = new GameServer(address);
             }
-            return sv;
+            return instance;
         }
 
-        public WebSocketServer GetWebSocketServer()
+        GameServer(string address)
         {
-            return ws;
+            WebSocketServer = new WebSocketServer(address);
+            WebSocketServer.AddWebSocketService<WebSocketSampleService>("/");
         }
 
         public void RunForever()
         {
-            ws.Start();
+            WebSocketServer.Start();
             Console.WriteLine("Game Server started.");
 
             try
@@ -84,54 +69,59 @@ namespace WebSocketSample.Server
             {
             }
 
-            ws.Stop();
+            WebSocketServer.Stop();
             Console.WriteLine("Game Server terminated.");
-        }
-
-        void Sync()
-        {
-            if (players.Count == 0)
-            {
-                return;
-            }
-
-            var playerPositions = new List<global::WebSocketSample.RPC.Player>();
-            foreach (var kv in players)
-            {
-                var uid = kv.Key;
-                var player = kv.Value;
-                if (!player.PosChanged)
-                {
-                    continue;
-                }
-                playerPositions.Add(new global::WebSocketSample.RPC.Player(player.uid, new Position(player.x, player.y, player.z)));
-                player.PosChanged = false;
-            }
-            if (playerPositions.Count == 0)
-            {
-                return;
-            }
-
-            var sync = new Sync(new SyncPayload(playerPositions));
-            var msg = JsonConvert.SerializeObject(sync);
-
-            broadcast(msg);
         }
 
         void PollKey()
         {
-            if (Console.KeyAvailable)
+            if (!Console.KeyAvailable) return;
+
+            var key = Console.ReadKey(true);
+            if (key.Key.ToString().ToLower() == EXIT_KEY)
             {
-                var key = Console.ReadKey(true);
-                if (key.Key.ToString().ToLower() == EXIT_KEY)
+                throw new GameExit();
+            }
+            else
+            {
+                Console.WriteLine("Enter " + EXIT_KEY + " to exit the game.");
+            }
+        }
+
+        // キュー内のタスク実行
+        void UpdateActions()
+        {
+            while (true)
+            {
+                lock (actions)
                 {
-                    throw new GameExit();
-                }
-                else
-                {
-                    Console.WriteLine("Enter q to exit the game.");
+                    if (actions.Count == 0) break;
+
+                    var action = actions.Dequeue();
+                    action();
                 }
             }
+        }
+
+        void Sync()
+        {
+            if (players.Count == 0) return;
+
+            var playersList = new List<RPC.Player>();
+            foreach (var kv in players)
+            {
+                var player = kv.Value;
+                if (!player.PositionChanged) continue;
+                var playerRpc = new RPC.Player(player.uid, new Position(player.x, player.y, player.z));
+                playersList.Add(playerRpc);
+                player.PositionChanged = false;
+            }
+
+            if (playersList.Count == 0) return;
+
+            var syncRpc = new Sync(new SyncPayload(playersList));
+            var syncJson = JsonConvert.SerializeObject(syncRpc);
+            Broadcast(syncJson);
         }
 
         // メインスレッドで実行するためのキューに入れる
@@ -143,20 +133,15 @@ namespace WebSocketSample.Server
             }
         }
 
-        // キュー内のタスク実行
-        void UpdateActions()
+        public void Ping(string senderId, MessageEventArgs e)
         {
-            while (true)
-            {
-                lock (actions)
-                {
-                    if (actions.Count == 0)
-                        break;
+            Console.WriteLine(">> Ping");
 
-                    var action = actions.Dequeue();
-                    action();
-                }
-            }
+            var pingRpc = new Ping(new PingPayload("pong"));
+            var pingJson = JsonConvert.SerializeObject(pingRpc);
+            SendTo(senderId, pingJson);
+
+            Console.WriteLine("<< Pong");
         }
 
         public void Login(string senderId, MessageEventArgs e)
@@ -164,13 +149,13 @@ namespace WebSocketSample.Server
             Console.WriteLine(">> Login");
 
             var login = JsonConvert.DeserializeObject<Login>(e.Data);
-            var uid = uidGenerator.generate();
 
-            var player = new Player(uid, login.Payload.Name);
-            players[uid] = player;
+            var player = new Player(uidGenerator.Generate(), login.Payload.Name);
+            players[player.uid] = player;
 
-            var jsonMessage = JsonConvert.SerializeObject(new LoginResponse(new LoginResponsePayload(uid)));
-            SendTo(senderId, jsonMessage);
+            var loginResponseRpc = new LoginResponse(new LoginResponsePayload(player.uid));
+            var loginResponseJson = JsonConvert.SerializeObject(loginResponseRpc);
+            SendTo(senderId, loginResponseJson);
 
             Console.WriteLine(player.ToString() + " login.");
         }
@@ -179,32 +164,31 @@ namespace WebSocketSample.Server
         {
             Console.WriteLine(">> PlayerUpdate");
 
-            var pos = JsonConvert.DeserializeObject<PlayerUpdate>(e.Data);
-            if (players.ContainsKey(pos.Payload.Id) || pos.Payload.Id != 0)
+            var playerUpdate = JsonConvert.DeserializeObject<PlayerUpdate>(e.Data);
+
+            Player player;
+            if (players.TryGetValue(playerUpdate.Payload.Id, out player))
             {
-                var player = players[pos.Payload.Id];
-                player.SetPos(
-                    pos.Payload.Position.X,
-                    pos.Payload.Position.Y,
-                    pos.Payload.Position.Z
+                player.SetPosition(
+                    playerUpdate.Payload.Position.X,
+                    playerUpdate.Payload.Position.Y,
+                    playerUpdate.Payload.Position.Z
                 );
             }
         }
 
-        public void SendTo(string id, string msg)
+        void SendTo(string id, string message)
         {
-            Console.WriteLine("SendTo: " + id + " " + msg);
-            var ws = GameServer.GetInstance().GetWebSocketServer();
-            ws.WebSocketServices["/"].Sessions.SendTo(
-                msg, id
-            );
+            WebSocketServer.WebSocketServices["/"].Sessions.SendTo(message, id);
+
+            Console.WriteLine("<< SendTo: " + id + " " + message);
         }
 
-        void broadcast(string msg)
+        void Broadcast(string message)
         {
-            Console.WriteLine("broeadcast: " + msg);
-            var ws = GameServer.GetInstance().GetWebSocketServer();
-            ws.WebSocketServices["/"].Sessions.Broadcast(msg);
+            WebSocketServer.WebSocketServices["/"].Sessions.Broadcast(message);
+
+            Console.WriteLine("<< Broeadcast: " + message);
         }
     }
 
@@ -212,7 +196,7 @@ namespace WebSocketSample.Server
     {
         int counter = 0;
 
-        public int generate()
+        public int Generate()
         {
             counter++;
             return counter;
@@ -234,9 +218,9 @@ namespace WebSocketSample.Server
         protected override void OnMessage(MessageEventArgs e)
         {
             Console.WriteLine("WebSocket Message: " + e.Data);
+
             try
             {
-                // メッセージディスパッチ
                 DispatchMethod(e);
             }
             catch (Exception ex)
@@ -258,72 +242,64 @@ namespace WebSocketSample.Server
             var header = JsonConvert.DeserializeObject<Header>(e.Data);
             Console.WriteLine("Header: " + header.Method);
 
-            var sv = GameServer.GetInstance();
+            var gameServer = GameServer.GetInstance();
             var senderId = ID;
 
-            if (header.Method == "ping")
+            switch (header.Method)
             {
-                sv.SendTo(senderId, JsonConvert.SerializeObject(new Ping(new PingPayload("pong"))));
-                Console.WriteLine("<< Pong");
-            }
-            else if (header.Method == "login")
-            {
-                sv.RunOnMainThread(() =>
-                {
-                    sv.Login(senderId, e);
-                });
-            }
-            else if (header.Method == "player_update")
-            {
-                sv.RunOnMainThread(() =>
-                {
-                    sv.PlayerUpdate(senderId, e);
-                });
+                case "ping":
+                    {
+                        gameServer.RunOnMainThread(() => gameServer.Ping(senderId, e));
+                        break;
+                    }
+                case "login":
+                    {
+                        gameServer.RunOnMainThread(() => gameServer.Login(senderId, e));
+                        break;
+                    }
+                case "player_update":
+                    {
+                        gameServer.RunOnMainThread(() => gameServer.PlayerUpdate(senderId, e));
+                        break;
+                    }
             }
         }
-
     }
 
     class Player
     {
-        public Player(int uid, string name,
-            float x = 0.0f, float y = 0.0f, float z = 0.0f)
+        public int uid;
+        public string name;
+        public float x;
+        public float y;
+        public float z;
+        public bool PositionChanged { get; set; }
+
+        public Player(int uid, string name, float x = 0.0f, float y = 0.0f, float z = 0.0f)
         {
             this.uid = uid;
             this.name = name;
             this.x = x;
             this.y = y;
             this.z = z;
-            this.PosChanged = false;
+            PositionChanged = false;
         }
 
-        public void SetPos(float x, float y, float z)
+        public void SetPosition(float x, float y, float z)
         {
             if (this.x != x || this.y != y || this.z != z)
             {
                 this.x = x;
                 this.y = y;
                 this.z = z;
-                PosChanged = true;
+                PositionChanged = true;
             }
         }
 
         public override string ToString()
         {
-            return string.Format(
-                "<Player(uid={0},name={1},x={2},y={3},z={4})>",
-                uid,
-                name,
-                x, y, z
-            );
+            return "<Player(uid=" + uid + " , name=" + name + ", x=" + x + ", y=" + y + ", z=" + z + ")>";
         }
-
-        public int uid;
-        public string name;
-        public float x;
-        public float y;
-        public float z;
-        public bool PosChanged { get; set; }
     }
 
     enum Status

@@ -17,6 +17,8 @@ public class MainController : MonoBehaviour
     GameObject playerPrefab;
     [SerializeField]
     GameObject otherPlayerPrefab;
+    [SerializeField]
+    GameObject itemPrefab;
 
     [SerializeField]
     private string connectAddress;
@@ -67,6 +69,12 @@ public class MainController : MonoBehaviour
                     {
                         var syncMessage = JsonUtility.FromJson<RPC.Sync>(eventArgs.Data);
                         MainThreadExecutor.Enqueue(() => OnSync(syncMessage.Payload));
+                        break;
+                    }
+                case "spawn":
+                    {
+                        var spawnResponse = JsonUtility.FromJson<RPC.Spawn>(eventArgs.Data);
+                        MainThreadExecutor.Enqueue(() => OnSpawn(spawnResponse.Payload));
                         break;
                     }
             }
@@ -144,5 +152,16 @@ public class MainController : MonoBehaviour
                 Debug.Log("Instantiated a new player: " + player.Id);
             }
         }
+    }
+
+    void OnSpawn(RPC.SpawnPayload response)
+    {
+        Debug.Log("<< OnSpawn");
+
+        Instantiate(
+            itemPrefab,
+            new Vector3(response.Position.X, response.Position.Y, response.Position.Z),
+            Quaternion.identity
+        );
     }
 }

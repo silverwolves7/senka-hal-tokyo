@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using WebSocketSharp;
 using WebSocketSharp.Server;
 using WebSocketSample.RPC;
+using System.Timers;
 
 namespace WebSocketSample.Server
 {
@@ -15,6 +16,7 @@ namespace WebSocketSample.Server
         public GameService(GameServer gameServer)
         {
             gameServer.OnUpdate += Sync;
+            StartSpawnTimer();
         }
 
         protected override void OnOpen()
@@ -128,6 +130,26 @@ namespace WebSocketSample.Server
             var syncRpc = new Sync(new SyncPayload(movedPlayers));
             var syncJson = JsonConvert.SerializeObject(syncRpc);
             Broadcast(syncJson);
+        }
+
+        void StartSpawnTimer()
+        {
+            var random = new Random();
+            var timer = new Timer();
+            timer.Elapsed += (_, e) =>
+            {
+                if (players.Count == 0) return;
+
+                var randomX = random.Next(-5, 5);
+                var randomY = random.Next(9, 11);
+                var randomZ = random.Next(-5, 5);
+                var spawnRpc = new Spawn(new SpawnPayload(new Position(randomX, randomY, randomZ)));
+                var spawnJson = JsonConvert.SerializeObject(spawnRpc);
+                Broadcast(spawnJson);
+                Console.WriteLine("<< Spawn");
+            };
+            timer.Interval = 3000;
+            timer.Start();
         }
     }
 }

@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class MainThreadExecutor : MonoBehaviour
 {
-    static Queue<Action> actions = new Queue<Action>();    // 非同期タスク
+    public static Queue<Action> actions = new Queue<Action>();    // 非同期タスク
 
     void Update()
     {
@@ -23,6 +23,15 @@ public class MainThreadExecutor : MonoBehaviour
         lock (actions)
         {
             actions.Enqueue(action);
+        }
+    }
+
+    public static void Clear()
+    {
+        lock (actions)
+        {
+            Debug.LogWarning("actions clear");
+            actions.Clear();
         }
     }
 }

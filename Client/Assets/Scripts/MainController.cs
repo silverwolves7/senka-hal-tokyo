@@ -275,6 +275,8 @@ public class MainController : MonoBehaviour
 
     void RestartGame()
     {
+        webSocket.Close();
+        MainThreadExecutor.Clear();
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 }

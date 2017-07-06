@@ -38,7 +38,7 @@ namespace WebSocketSample.Server
 
         public void OnLogin(string senderId, LoginPayload loginPayload)
         {
-            Console.WriteLine(">> Login");
+            // Console.WriteLine(">> Login");
 
             var player = new Player(uidCounter++, loginPayload.Name, new Position(0f, 0f, 0f), 0);
             players[player.Uid] = player;
@@ -54,7 +54,7 @@ namespace WebSocketSample.Server
 
         public void OnPlayerUpdate(string senderId, PlayerUpdatePayload playerUpdatePayload)
         {
-            Console.WriteLine(">> PlayerUpdate");
+            // Console.WriteLine(">> PlayerUpdate");
 
             Player player;
             if (players.TryGetValue(playerUpdatePayload.Id, out player))
@@ -65,7 +65,7 @@ namespace WebSocketSample.Server
 
         public void OnGetItem(string senderId, GetItemPayload getItemPayload)
         {
-            Console.WriteLine(">> GetItem");
+            // Console.WriteLine(">> GetItem");
 
             var itemId = getItemPayload.ItemId;
             if (items.ContainsKey(itemId))
@@ -122,7 +122,7 @@ namespace WebSocketSample.Server
                 var spawnJson = JsonConvert.SerializeObject(spawnRpc);
                 broadcast(spawnJson);
 
-                Console.WriteLine("<< Spawn");
+                // Console.WriteLine("<< Spawn");
             };
             timer.Start();
         }

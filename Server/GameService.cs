@@ -26,10 +26,10 @@ namespace WebSocketSample.Server
 
         protected override void OnMessage(MessageEventArgs e)
         {
-            Console.WriteLine("WebSocket Message: " + e.Data);
+            // Console.WriteLine("WebSocket Message: " + e.Data);
 
             var header = JsonConvert.DeserializeObject<Header>(e.Data);
-            Console.WriteLine("Header: " + header.Method);
+            // Console.WriteLine("Header: " + header.Method);
 
             switch (header.Method)
             {

@@ -61,13 +61,13 @@ namespace WebSocketSample.Server
         void SendTo(string message, string id)
         {
             WebSocketServer.WebSocketServices[SERVICE_NAME].Sessions.SendTo(message, id);
-            Console.WriteLine("<< SendTo: " + id + " " + message);
+            // Console.WriteLine("<< SendTo: " + id + " " + message);
         }
 
         void Broadcast(string message)
         {
             WebSocketServer.WebSocketServices[SERVICE_NAME].Sessions.Broadcast(message);
-            Console.WriteLine("<< Broeadcast: " + message);
+            // Console.WriteLine("<< Broeadcast: " + message);
         }
     }
 }

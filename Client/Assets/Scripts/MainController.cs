@@ -1,6 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UniRx;
 using WebSocketSharp;
 using RPC = WebSocketSample.RPC;
 
@@ -269,12 +271,8 @@ public class MainController : MonoBehaviour
         else if (payload.Id == playerId)
         {
             Destroy(playerObj);
-            Invoke("RestartGame", 3);
+            Observable.Timer(TimeSpan.FromSeconds(3f))
+                .Subscribe(_ => SceneManager.LoadScene(SceneManager.GetActiveScene().name));
         }
-    }
-
-    void RestartGame()
-    {
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 }

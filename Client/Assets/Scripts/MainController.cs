@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using WebSocketSharp;
@@ -269,12 +270,13 @@ public class MainController : MonoBehaviour
         else if (payload.Id == playerId)
         {
             Destroy(playerObj);
-            Invoke("RestartGame", 3);
+            StartCoroutine(RestartGame());
         }
     }
 
-    void RestartGame()
+    IEnumerator RestartGame()
     {
+        yield return new WaitForSeconds(3f);
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 }

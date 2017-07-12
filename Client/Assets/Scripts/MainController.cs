@@ -49,53 +49,54 @@ public class MainController : MonoBehaviour
         // メッセージを受信したときのハンドラ
         webSocket.OnMessage += (sender, eventArgs) =>
         {
-            Debug.Log("WebSocket Message: " + eventArgs.Data);
-
-            var header = JsonUtility.FromJson<RPC.Header>(eventArgs.Data);
-            switch (header.Method)
+            lock (MainThreadExecutor.actions)
             {
-                case "ping":
-                    {
-                        var pong = JsonUtility.FromJson<RPC.Ping>(eventArgs.Data);
-                        Debug.Log(pong.Payload.Message);
-                        break;
-                    }
-                case "login_response":
-                    {
-                        var loginResponse = JsonUtility.FromJson<RPC.LoginResponse>(eventArgs.Data);
-                        MainThreadExecutor.Enqueue(() => OnLoginResponse(loginResponse.Payload));
-                        break;
-                    }
-                case "sync":
-                    {
-                        var syncMessage = JsonUtility.FromJson<RPC.Sync>(eventArgs.Data);
-                        MainThreadExecutor.Enqueue(() => OnSync(syncMessage.Payload));
-                        break;
-                    }
-                case "spawn":
-                    {
-                        var spawnResponse = JsonUtility.FromJson<RPC.Spawn>(eventArgs.Data);
-                        MainThreadExecutor.Enqueue(() => OnSpawn(spawnResponse.Payload));
-                        break;
-                    }
-                case "delete_item":
-                    {
-                        var deleteMessage = JsonUtility.FromJson<RPC.DeleteItem>(eventArgs.Data);
-                        MainThreadExecutor.Enqueue(() => OnDeleteItem(deleteMessage.Payload));
-                        break;
-                    }
-                case "environment":
-                    {
-                        var environmentMessage = JsonUtility.FromJson<RPC.Environment>(eventArgs.Data);
-                        MainThreadExecutor.Enqueue(() => OnEnvironment(environmentMessage.Payload));
-                        break;
-                    }
-                case "delete_player":
-                    {
-                        var deletePlayerMessage = JsonUtility.FromJson<RPC.DeletePlayer>(eventArgs.Data);
-                        MainThreadExecutor.Enqueue(() => OnDeletePlayer(deletePlayerMessage.Payload));
-                        break;
-                    }
+                var header = JsonUtility.FromJson<RPC.Header>(eventArgs.Data);
+                switch (header.Method)
+                {
+                    case "ping":
+                        {
+                            var pong = JsonUtility.FromJson<RPC.Ping>(eventArgs.Data);
+                            Debug.Log(pong.Payload.Message);
+                            break;
+                        }
+                    case "login_response":
+                        {
+                            var loginResponse = JsonUtility.FromJson<RPC.LoginResponse>(eventArgs.Data);
+                            MainThreadExecutor.Enqueue(() => OnLoginResponse(loginResponse.Payload));
+                            break;
+                        }
+                    case "sync":
+                        {
+                            var syncMessage = JsonUtility.FromJson<RPC.Sync>(eventArgs.Data);
+                            MainThreadExecutor.Enqueue(() => OnSync(syncMessage.Payload));
+                            break;
+                        }
+                    case "spawn":
+                        {
+                            var spawnResponse = JsonUtility.FromJson<RPC.Spawn>(eventArgs.Data);
+                            MainThreadExecutor.Enqueue(() => OnSpawn(spawnResponse.Payload));
+                            break;
+                        }
+                    case "delete_item":
+                        {
+                            var deleteMessage = JsonUtility.FromJson<RPC.DeleteItem>(eventArgs.Data);
+                            MainThreadExecutor.Enqueue(() => OnDeleteItem(deleteMessage.Payload));
+                            break;
+                        }
+                    case "environment":
+                        {
+                            var environmentMessage = JsonUtility.FromJson<RPC.Environment>(eventArgs.Data);
+                            MainThreadExecutor.Enqueue(() => OnEnvironment(environmentMessage.Payload));
+                            break;
+                        }
+                    case "delete_player":
+                        {
+                            var deletePlayerMessage = JsonUtility.FromJson<RPC.DeletePlayer>(eventArgs.Data);
+                            MainThreadExecutor.Enqueue(() => OnDeletePlayer(deletePlayerMessage.Payload));
+                            break;
+                        }
+                }
             }
         };
 
@@ -275,6 +276,8 @@ public class MainController : MonoBehaviour
 
     void RestartGame()
     {
+        webSocket.Close();
+        MainThreadExecutor.Clear();
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
     }
 }

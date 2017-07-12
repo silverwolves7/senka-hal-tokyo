@@ -41,7 +41,10 @@ namespace WebSocketSample.Server
             Console.WriteLine(">> Login");
 
             var player = new Player(uidCounter++, loginPayload.Name, new Position(0f, 0f, 0f), 0);
-            players[player.Uid] = player;
+            lock (players)
+            {
+                players[player.Uid] = player;
+            }
 
             var loginResponseRpc = new LoginResponse(new LoginResponsePayload(player.Uid));
             var loginResponseJson = JsonConvert.SerializeObject(loginResponseRpc);
@@ -89,13 +92,16 @@ namespace WebSocketSample.Server
             if (players.Count == 0) return;
 
             var movedPlayers = new List<RPC.Player>();
-            foreach (var player in players.Values)
+            lock (players)
             {
-                if (!player.isPositionChanged) continue;
+                foreach (var player in players.Values)
+                {
+                    if (!player.isPositionChanged) continue;
 
-                var playerRpc = new RPC.Player(player.Uid, player.Position, player.Score);
-                movedPlayers.Add(playerRpc);
-                player.isPositionChanged = false;
+                    var playerRpc = new RPC.Player(player.Uid, player.Position, player.Score);
+                    movedPlayers.Add(playerRpc);
+                    player.isPositionChanged = false;
+                }
             }
 
             if (movedPlayers.Count == 0) return;
@@ -152,7 +158,10 @@ namespace WebSocketSample.Server
             if (alphaPlayer.Score == bravoPlayer.Score) { return; }
             var loser = alphaPlayer.Score < bravoPlayer.Score ? alphaPlayer : bravoPlayer;
 
-            players.Remove(loser.Uid);
+            lock (players)
+            {
+                players.Remove(loser.Uid);
+            }
 
             var deletePlayerRpc = new DeletePlayer(new DeletePlayerPayload(loser.Uid));
             var deletePlayerJson = JsonConvert.SerializeObject(deletePlayerRpc);

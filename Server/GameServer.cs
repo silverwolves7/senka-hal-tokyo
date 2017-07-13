@@ -1,5 +1,6 @@
 ﻿using System;
 using WebSocketSharp.Server;
+using System.Timers;
 
 namespace WebSocketSample.Server
 {
@@ -35,9 +36,15 @@ namespace WebSocketSample.Server
             WebSocketServer.Start();
             Console.WriteLine("Game Server started.");
 
-            while (!IsInputtedExitKey())
+            var timer = new Timer(500);
+            timer.Elapsed += (_, __) =>
             {
                 model.OnUpdate();
+            };
+            timer.Start();
+
+            while (!IsInputtedExitKey())
+            {
             }
         }
 

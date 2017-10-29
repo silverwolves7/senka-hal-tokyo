@@ -11,6 +11,30 @@ public class MainController : MonoBehaviour
     void Start()
     {
         webSocket = new WebSocket(connectAddress);
+
+        // コネクションを確立したときのハンドラ
+        webSocket.OnOpen += (sender, eventArgs) =>
+        {
+            Debug.Log("WebSocket Opened");
+        };
+
+        // エラーが発生したときのハンドラ
+        webSocket.OnError += (sender, eventArgs) =>
+        {
+            Debug.Log("WebSocket Error Message: " + eventArgs.Message);
+        };
+
+        // コネクションを閉じたときのハンドラ
+        webSocket.OnClose += (sender, eventArgs) =>
+        {
+            Debug.Log("WebSocket Closed");
+        };
+
+        // メッセージを受信したときのハンドラ
+        webSocket.OnMessage += (sender, eventArgs) => {
+            Debug.Log("WebSocket Message: " + eventArgs.Data);
+        };
+
         webSocket.Connect();
     }
 

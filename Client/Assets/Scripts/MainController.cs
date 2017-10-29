@@ -31,7 +31,8 @@ public class MainController : MonoBehaviour
         };
 
         // メッセージを受信したときのハンドラ
-        webSocket.OnMessage += (sender, eventArgs) => {
+        webSocket.OnMessage += (sender, eventArgs) => 
+        {
             Debug.Log("WebSocket Message: " + eventArgs.Data);
         };
 
@@ -40,5 +41,10 @@ public class MainController : MonoBehaviour
 
     void Update()
     {
+    }
+
+    void OnDestroy()
+    {
+        webSocket.Close();    
     }
 }

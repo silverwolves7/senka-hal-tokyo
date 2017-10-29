@@ -35,6 +35,17 @@ public class MainController : MonoBehaviour
         webSocket.OnMessage += (sender, eventArgs) => 
         {
             Debug.Log("WebSocket Message: " + eventArgs.Data);
+
+            var header = JsonUtility.FromJson<RPC.Header>(eventArgs.Data);
+            switch (header.Method)
+            {
+                case "ping":
+                    {
+                        var pong = JsonUtility.FromJson<RPC.Ping>(eventArgs.Data);
+                        Debug.Log(pong.Payload.Message);
+                        break;
+                    }
+            }
         };
 
         webSocket.Connect();

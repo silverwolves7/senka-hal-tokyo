@@ -7,7 +7,10 @@ public class MainController : MonoBehaviour
     WebSocket webSocket;    // WebSocketコネクション
 
     [SerializeField]
-    private string connectAddress;
+    string connectAddress;
+
+    [SerializeField]
+    GameObject playerPrefab;
 
     int playerId;
 

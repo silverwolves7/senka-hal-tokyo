@@ -50,7 +50,7 @@ public class MainController : MonoBehaviour
 
         webSocket.Connect();
 
-        webSocket.Send(JsonUtility.ToJson(new RPC.Ping(new RPC.PingPayload("ping"))));
+        Login();
     }
 
     void Update()
@@ -60,5 +60,14 @@ public class MainController : MonoBehaviour
     void OnDestroy()
     {
         webSocket.Close();    
+    }
+
+    void Login()
+    {
+        var jsonMessage = JsonUtility.ToJson(new RPC.Login(new RPC.LoginPayload("PlayerName")));
+        Debug.Log(jsonMessage);
+
+        webSocket.Send(jsonMessage);
+        Debug.Log(">> Login");
     }
 }

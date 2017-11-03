@@ -12,6 +12,7 @@ public class MainController : MonoBehaviour
     [SerializeField]
     GameObject playerPrefab;
 
+    GameObject playerObj;
     int playerId;
 
     void Start()
@@ -87,5 +88,6 @@ public class MainController : MonoBehaviour
         Debug.Log("<< LoginResponse");
         playerId = response.Id;
         Debug.Log(playerId);
+        playerObj = Instantiate(playerPrefab, new Vector3(0.0f, 0.5f, 0.0f), Quaternion.identity) as GameObject;
     }
 }

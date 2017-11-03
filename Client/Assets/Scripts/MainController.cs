@@ -9,6 +9,8 @@ public class MainController : MonoBehaviour
     [SerializeField]
     private string connectAddress;
 
+    int playerId;
+
     void Start()
     {
         webSocket = new WebSocket(connectAddress);
@@ -45,6 +47,12 @@ public class MainController : MonoBehaviour
                         Debug.Log(pong.Payload.Message);
                         break;
                     }
+                case "login_response":
+                    {
+                        var loginResponse = JsonUtility.FromJson<RPC.LoginResponse>(eventArgs.Data);
+                        MainThreadExecutor.Enqueue(() => OnLoginResponse(loginResponse.Payload));
+                        break;
+                    }
             }
         };
 
@@ -69,5 +77,12 @@ public class MainController : MonoBehaviour
 
         webSocket.Send(jsonMessage);
         Debug.Log(">> Login");
+    }
+
+    void OnLoginResponse(RPC.LoginResponsePayload response)
+    {
+        Debug.Log("<< LoginResponse");
+        playerId = response.Id;
+        Debug.Log(playerId);
     }
 }

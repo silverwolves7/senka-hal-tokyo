@@ -13,6 +13,7 @@ public class MainController : MonoBehaviour
     GameObject playerPrefab;
 
     GameObject playerObj;
+    Vector3 previousPlayerObjPosition; // 前フレームでの位置
     int playerId;
 
     void Start()
@@ -67,6 +68,7 @@ public class MainController : MonoBehaviour
 
     void Update()
     {
+        UpdatePosition();
     }
 
     void OnDestroy()
@@ -89,5 +91,22 @@ public class MainController : MonoBehaviour
         playerId = response.Id;
         Debug.Log(playerId);
         playerObj = Instantiate(playerPrefab, new Vector3(0.0f, 0.5f, 0.0f), Quaternion.identity) as GameObject;
+    }
+
+    void UpdatePosition()
+    {
+        if (playerObj == null) return;
+
+        var currentPlayerPosition = playerObj.transform.position;
+        if (currentPlayerPosition == previousPlayerObjPosition) return;
+
+        Debug.Log(">> Update");
+
+        previousPlayerObjPosition = currentPlayerPosition;
+
+        var rpcPosition = new RPC.Position(currentPlayerPosition.x, currentPlayerPosition.y, currentPlayerPosition.z);
+        var jsonMessage = JsonUtility.ToJson(new RPC.PlayerUpdate(new RPC.PlayerUpdatePayload(playerId, rpcPosition)));
+        Debug.Log(jsonMessage);
+        webSocket.Send(jsonMessage);
     }
 }

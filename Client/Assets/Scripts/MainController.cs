@@ -7,7 +7,13 @@ public class MainController : MonoBehaviour
     WebSocket webSocket;    // WebSocketコネクション
 
     [SerializeField]
-    private string connectAddress;
+    string connectAddress;
+
+    [SerializeField]
+    GameObject playerPrefab;
+
+    GameObject playerObj;
+    int playerId;
 
     void Start()
     {
@@ -45,12 +51,18 @@ public class MainController : MonoBehaviour
                         Debug.Log(pong.Payload.Message);
                         break;
                     }
+                case "login_response":
+                    {
+                        var loginResponse = JsonUtility.FromJson<RPC.LoginResponse>(eventArgs.Data);
+                        MainThreadExecutor.Enqueue(() => OnLoginResponse(loginResponse.Payload));
+                        break;
+                    }
             }
         };
 
         webSocket.Connect();
 
-        webSocket.Send(JsonUtility.ToJson(new RPC.Ping(new RPC.PingPayload("ping"))));
+        Login();
     }
 
     void Update()
@@ -60,5 +72,22 @@ public class MainController : MonoBehaviour
     void OnDestroy()
     {
         webSocket.Close();    
+    }
+
+    void Login()
+    {
+        var jsonMessage = JsonUtility.ToJson(new RPC.Login(new RPC.LoginPayload("PlayerName")));
+        Debug.Log(jsonMessage);
+
+        webSocket.Send(jsonMessage);
+        Debug.Log(">> Login");
+    }
+
+    void OnLoginResponse(RPC.LoginResponsePayload response)
+    {
+        Debug.Log("<< LoginResponse");
+        playerId = response.Id;
+        Debug.Log(playerId);
+        playerObj = Instantiate(playerPrefab, new Vector3(0.0f, 0.5f, 0.0f), Quaternion.identity) as GameObject;
     }
 }

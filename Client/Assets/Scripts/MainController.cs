@@ -162,5 +162,13 @@ public class MainController : MonoBehaviour
         var position = new Vector3(rpcItem.Position.X, rpcItem.Position.Y, rpcItem.Position.Z);
         var itemObj = Instantiate(itemPrefab, position, Quaternion.identity);
         items.Add(payload.Item.Id, itemObj);
+
+        var item = itemObj.GetComponent<ItemController>();
+        item.ItemId = payload.Item.Id;
+        item.OnGet += () =>
+        {
+            items.Remove(item.ItemId);
+            Destroy(itemObj);
+        };
     }
 }

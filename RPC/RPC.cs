@@ -24,19 +24,6 @@ namespace WebSocketSample.RPC
     }
 
     [System.Serializable]
-    public class Item
-    {
-        public int Id;
-        public Position Position;
-
-        public Item(int id, Position position)
-        {
-            this.Id = id;
-            this.Position = position;
-        }
-    }
-
-    [System.Serializable]
     public class PlayerUpdate
     {
         public string Method = "player_update";
@@ -181,57 +168,11 @@ namespace WebSocketSample.RPC
     [System.Serializable]
     public class SpawnPayload
     {
-        public Item Item;
+        public Position Position;
 
-        public SpawnPayload(Item item)
+        public SpawnPayload(Position position)
         {
-            this.Item = item;
-        }
-    }
-
-    [System.Serializable]
-    public class GetItem
-    {
-        public string Method = "get_item";
-        public GetItemPayload Payload;
-
-        public GetItem(GetItemPayload payload)
-        {
-            this.Payload = payload;
-        }
-    }
-
-    [System.Serializable]
-    public class GetItemPayload
-    {
-        public int ItemId;
-
-        public GetItemPayload(int itemId)
-        {
-            this.ItemId = itemId;
-        }
-    }
-
-    [System.Serializable]
-    public class DeleteItem
-    {
-        public string Method = "delete_item";
-        public DeleteItemPayload Payload;
-
-        public DeleteItem(DeleteItemPayload payload)
-        {
-            this.Payload = payload;
-        }
-    }
-
-    [System.Serializable]
-    public class DeleteItemPayload
-    {
-        public int ItemId;
-
-        public DeleteItemPayload(int itemId)
-        {
-            this.ItemId = itemId;
+            this.Position = position;
         }
     }
 }

@@ -24,7 +24,6 @@ namespace WebSocketSample.Server
                 service.OnPing += model.OnPing;
                 service.OnLogin += model.OnLogin;
                 service.OnPlayerUpdate += model.OnPlayerUpdate;
-                service.OnGetItem += model.OnGetItem;
                 return service;
             });
         }

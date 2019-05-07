@@ -6,7 +6,7 @@ HAL専科用のサンプルコード
 ## Clone
 
 ```
-git clone --recursive https://github.com/k-hamada/HAL.git
+git clone --recursive https://github.com/aiming/senka-hal-tokyo.git
 ```
 
 ## Build
